@@ -20,6 +20,6 @@ MonoBehaviour:
   - {x: 2, y: 0, z: 2}
   <SpawnInterval>k__BackingField: 3
   <WinConditions>k__BackingField: 0
-  <WinConditionValue>k__BackingField: 5
+  <WinConditionValue>k__BackingField: 30
   <LoseConditions>k__BackingField: 0
   <LoseConditionValue>k__BackingField: 1

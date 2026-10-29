@@ -1,5 +1,7 @@
 #region
 
+using System;
+using Cinemachine;
 using Runtime.Character;
 using Runtime.Controllers;
 using Runtime.Enemy;
@@ -13,6 +15,8 @@ namespace Runtime.Bootstrap
 {
     public class GameBoostrap : MonoBehaviour
     {
+        [SerializeField] private CinemachineVirtualCamera _followCamera;
+
         private ControllerRunnerService _controllerRunnerService;
         private PlayerCharacterSpawner _playerCharacterSpawner;
         private EnemiesSpawner _enemiesSpawner;
@@ -29,29 +33,35 @@ namespace Runtime.Bootstrap
 
         private void RegisterAllServices()
         {
-            var controllersRunnerServicePrefab = Resources.Load<ControllerRunnerService>("Utilities/ControllersRunnerServicePrefab");
+            ControllerRunnerService controllersRunnerServicePrefab =
+                Resources.Load<ControllerRunnerService>("Utilities/ControllersRunnerServicePrefab");
+
             _controllerRunnerService = Instantiate(controllersRunnerServicePrefab);
 
-            _playerCharacterSpawner = new(_controllerRunnerService);
+            _playerCharacterSpawner = new PlayerCharacterSpawner(_controllerRunnerService);
             _enemiesSpawner = new EnemiesSpawner(_controllerRunnerService);
 
-            var enemyPrefab = Resources.Load<Enemy.Enemy>("Level/EnemyPrefab");
-            _enemyCreationService = new(_enemiesSpawner, enemyPrefab, this);
+            Enemy.Enemy enemyPrefab = Resources.Load<Enemy.Enemy>("Level/EnemyPrefab");
+            _enemyCreationService = new EnemyCreationService(_enemiesSpawner, enemyPrefab, this);
         }
 
         private void InitializeGame()
         {
-            var playerCharacterSettings = Resources.Load<PlayerCharacterSettings>("PlayerCharacter/PlayerCharacterSettings");
-            var playerCharacter = _playerCharacterSpawner.CreatePlayerCharacterFrom(playerCharacterSettings);
+            PlayerCharacterSettings playerCharacterSettings = Resources.Load<PlayerCharacterSettings>("PlayerCharacter/PlayerCharacterSettings");
+            PlayerCharacter playerCharacter = _playerCharacterSpawner.CreatePlayerCharacterFrom(playerCharacterSettings, _followCamera);
 
-            var levelSettings = Resources.Load<LevelSettings>("Level/LevelSettings");
+            LevelSettings levelSettings = Resources.Load<LevelSettings>("Level/LevelSettings");
+
             _enemyCreationService.SummonEnemiesWithInterval(levelSettings.EnemySettings, levelSettings.SpawnInterval,
                 levelSettings.EnemySpawnPositions);
 
             _levelConditionsCreator = new LevelConditionsCreator(_enemyCreationService, playerCharacter);
 
-            var winConditionFunc = _levelConditionsCreator.GetWinConditionFunc(levelSettings.WinConditions, levelSettings.WinConditionValue);
-            var loseConditionFunc = _levelConditionsCreator.GetLoseConditionFunc(levelSettings.LoseConditions, levelSettings.LoseConditionValue);
+            Func<bool> winConditionFunc = _levelConditionsCreator.GetWinConditionFunc(levelSettings.WinConditions, levelSettings.WinConditionValue);
+
+            Func<bool> loseConditionFunc =
+                _levelConditionsCreator.GetLoseConditionFunc(levelSettings.LoseConditions, levelSettings.LoseConditionValue);
+
             _levelConditionsController = new LevelConditionsController(winConditionFunc, loseConditionFunc);
             _levelConditionsController.Enable();
 

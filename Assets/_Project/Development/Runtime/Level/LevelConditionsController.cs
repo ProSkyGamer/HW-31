@@ -2,7 +2,6 @@
 
 using System;
 using Runtime.Controllers;
-using UnityEngine;
 
 #endregion
 
@@ -24,8 +23,6 @@ namespace Runtime.Level
 
         protected override void UpdateInternal(float deltaTime)
         {
-            Debug.Log($"{_winCondition()} {_loseCondition()}");
-
             if (_winCondition())
                 GameWon?.Invoke();
             else if (_loseCondition())

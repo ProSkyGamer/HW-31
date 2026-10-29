@@ -21,7 +21,6 @@ namespace Runtime.Enemy
         public IReadonlyReactVariable<float> CurrentHealth => _healthComponent.Current;
         public IReadonlyReactVariable<float> MaxHealth => _healthComponent.Max;
 
-
         public void Initialize(CharacterMovementController movementController, HealthComponent healthComponent, IHitProcessor hitProcessor)
         {
             _movementController = movementController;
@@ -44,8 +43,6 @@ namespace Runtime.Enemy
 
         public void OnCollisionEnter(Collision other)
         {
-            Debug.Log($"enemy collidion w {other.gameObject.name}");
-
             _hitProcessor.ProcessHit(other);
         }
 

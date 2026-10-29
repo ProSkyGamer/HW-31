@@ -1,5 +1,6 @@
 #region
 
+using Cinemachine;
 using Runtime.Character;
 using Runtime.Controllers;
 using Runtime.Health;
@@ -19,14 +20,17 @@ namespace Runtime.Spawners
             _controllerRunnerService = controllerRunnerService;
         }
 
-        public PlayerCharacter CreatePlayerCharacterFrom(PlayerCharacterSettings playerCharacterSettings)
+        public PlayerCharacter CreatePlayerCharacterFrom(PlayerCharacterSettings playerCharacterSettings, CinemachineVirtualCamera followCamera)
         {
-            var playerCharacter = Object.Instantiate(playerCharacterSettings.Prefab, playerCharacterSettings.SpawnPoint, Quaternion.identity, null);
-            var movementInputController = new InputMovementController();
+            PlayerCharacter playerCharacter =
+                Object.Instantiate(playerCharacterSettings.Prefab, playerCharacterSettings.SpawnPoint, Quaternion.identity, null);
+
+            InputMovementController movementInputController = new();
 
             IDirectionalMover playerMovement;
             IDirectionalRotator playerRotator;
-            if (playerCharacter.TryGetComponent<Rigidbody>(out var rigidbody))
+
+            if (playerCharacter.TryGetComponent<Rigidbody>(out Rigidbody rigidbody))
             {
                 playerMovement = new RigidbodyDirectionalMover(rigidbody, playerCharacterSettings.MoveSpeed);
                 playerRotator = new RigidbodyDirectionalRotator(rigidbody, playerCharacterSettings.RotationSpeed);
@@ -38,15 +42,16 @@ namespace Runtime.Spawners
 
             playerRotator.Rotate(playerCharacter.transform.forward);
 
-            var movementController = new MovementController(playerMovement, playerRotator);
+            MovementController movementController = new(playerMovement, playerRotator);
 
-            var characterMovementController = new CharacterMovementController(movementController, movementInputController);
+            CharacterMovementController characterMovementController = new(movementController, movementInputController);
 
-            var shootingInputController = new CharacterShootingInputController();
-            var playerShootingController = new CharacterFiring(playerCharacterSettings.BulletPrefab, playerCharacter.BulletShootingPosition,
+            CharacterShootingInputController shootingInputController = new();
+
+            CharacterFiring playerShootingController = new(playerCharacterSettings.BulletPrefab, playerCharacter.BulletShootingPosition,
                 playerCharacterSettings.BulletDamage, playerCharacterSettings.BulletSpeed, playerRotator);
 
-            var healthComponent = new HealthComponent(playerCharacterSettings.MaxHealth);
+            HealthComponent healthComponent = new(playerCharacterSettings.MaxHealth);
 
             _controllerRunnerService.Register(movementInputController, () => playerCharacter.IsDestroyed);
             _controllerRunnerService.Register(shootingInputController, () => playerCharacter.IsDestroyed);
@@ -56,8 +61,10 @@ namespace Runtime.Spawners
             _controllerRunnerService.Register(movementController, () => playerCharacter.IsDestroyed);
             movementController.Enable();
 
-
             playerCharacter.Initialize(characterMovementController, playerShootingController, shootingInputController, healthComponent);
+
+            followCamera.Follow = playerCharacter.LookAtTarget;
+            followCamera.LookAt = playerCharacter.LookAtTarget;
 
             return playerCharacter;
         }

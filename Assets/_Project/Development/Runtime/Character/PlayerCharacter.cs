@@ -22,7 +22,9 @@ namespace Runtime.Character
         private float _spawnTime;
 
         [SerializeField] private Transform _bulletShootingPosition;
+        [SerializeField] private Transform _lookAtTarget;
         public Transform BulletShootingPosition => _bulletShootingPosition;
+        public Transform LookAtTarget => _lookAtTarget;
 
         public IReadonlyReactVariable<float> CurrentHealth => _healthComponent.Current;
         public IReadonlyReactVariable<float> MaxHealth => _healthComponent.Max;
@@ -62,8 +64,6 @@ namespace Runtime.Character
 
         public void TakeDamage(float amount)
         {
-            Debug.Log($"taking damage {amount}");
-
             _healthComponent.TakeDamage(amount);
         }
 
