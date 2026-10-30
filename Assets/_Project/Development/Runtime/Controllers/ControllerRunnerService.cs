@@ -12,29 +12,30 @@ namespace Runtime.Controllers
     {
         private class ControllerRegistration
         {
-            public ControllerRegistration(Controller controller, Func<bool> destructionReason)
+            public ControllerRegistration(IController controller, Func<bool> destructionReason)
             {
                 Controller = controller;
                 DestructionReason = destructionReason;
             }
 
-            public Controller Controller { get; }
+            public IController Controller { get; }
             public Func<bool> DestructionReason { get; }
         }
 
         private readonly List<ControllerRegistration> _runningControllers = new();
 
-        public void Register(Controller controller, Func<bool> destructionReason)
+        public void Register(IController controller, Func<bool> destructionReason)
         {
             _runningControllers.Add(new(controller, destructionReason));
         }
 
         private void Update()
         {
-            var deltaTime = Time.deltaTime;
-            for (var i = 0; i < _runningControllers.Count; i++)
+            float deltaTime = Time.deltaTime;
+
+            for (int i = 0; i < _runningControllers.Count; i++)
             {
-                var controllerRegistration = _runningControllers[i];
+                ControllerRegistration controllerRegistration = _runningControllers[i];
 
                 if (controllerRegistration.DestructionReason != null)
                     if (controllerRegistration.DestructionReason())
@@ -42,6 +43,7 @@ namespace Runtime.Controllers
                         _runningControllers.RemoveAt(i);
 
                         i--;
+
                         continue;
                     }
 

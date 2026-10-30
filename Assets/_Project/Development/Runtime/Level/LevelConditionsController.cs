@@ -1,31 +1,30 @@
 #region
 
 using System;
-using Runtime.Controllers;
 
 #endregion
 
 namespace Runtime.Level
 {
-    public class LevelConditionsController : Controller
+    public class LevelConditionsController
     {
         public event Action GameWon;
         public event Action GameLost;
 
-        private readonly Func<bool> _winCondition;
-        private readonly Func<bool> _loseCondition;
+        private readonly Func<ILevelData, bool> _winCondition;
+        private readonly Func<ILevelData, bool> _loseCondition;
 
-        public LevelConditionsController(Func<bool> winCondition, Func<bool> loseCondition)
+        public LevelConditionsController(Func<ILevelData, bool> winCondition, Func<ILevelData, bool> loseCondition)
         {
             _winCondition = winCondition ?? throw new NullReferenceException("Win condition is null");
             _loseCondition = loseCondition ?? throw new NullReferenceException("Lose condition is null");
         }
 
-        protected override void UpdateInternal(float deltaTime)
+        public void CheckConditions(ILevelData levelData)
         {
-            if (_winCondition())
+            if (_winCondition(levelData))
                 GameWon?.Invoke();
-            else if (_loseCondition())
+            else if (_loseCondition(levelData))
                 GameLost?.Invoke();
         }
     }

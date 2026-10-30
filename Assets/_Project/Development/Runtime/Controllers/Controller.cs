@@ -1,6 +1,6 @@
 namespace Runtime.Controllers
 {
-    public abstract class Controller
+    public abstract class Controller : IController
     {
         public bool IsActive { get; private set; }
 

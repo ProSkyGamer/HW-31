@@ -5,6 +5,7 @@ using Cinemachine;
 using Runtime.Character;
 using Runtime.Controllers;
 using Runtime.Enemy;
+using Runtime.Game;
 using Runtime.Level;
 using Runtime.Spawners;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace Runtime.Bootstrap
         private EnemyCreationService _enemyCreationService;
         private LevelConditionsCreator _levelConditionsCreator;
         private LevelConditionsController _levelConditionsController;
+        private GameController _gameController;
 
         private void Awake()
         {
@@ -36,6 +38,10 @@ namespace Runtime.Bootstrap
             ControllerRunnerService controllersRunnerServicePrefab =
                 Resources.Load<ControllerRunnerService>("Utilities/ControllersRunnerServicePrefab");
 
+            PlayerCharacterSettings playerCharacterSettings = Resources.Load<PlayerCharacterSettings>("PlayerCharacter/PlayerCharacterSettings");
+
+            LevelSettings levelSettings = Resources.Load<LevelSettings>("Level/LevelSettings");
+
             _controllerRunnerService = Instantiate(controllersRunnerServicePrefab);
 
             _playerCharacterSpawner = new PlayerCharacterSpawner(_controllerRunnerService);
@@ -43,45 +49,26 @@ namespace Runtime.Bootstrap
 
             Enemy.Enemy enemyPrefab = Resources.Load<Enemy.Enemy>("Level/EnemyPrefab");
             _enemyCreationService = new EnemyCreationService(_enemiesSpawner, enemyPrefab, this);
+
+            _levelConditionsCreator = new LevelConditionsCreator();
+
+            Func<ILevelData, bool> winConditionFunc =
+                _levelConditionsCreator.GetWinConditionFunc(levelSettings.WinConditions, levelSettings.WinConditionValue);
+
+            Func<ILevelData, bool> loseConditionFunc =
+                _levelConditionsCreator.GetLoseConditionFunc(levelSettings.LoseConditions, levelSettings.LoseConditionValue);
+
+            _levelConditionsController = new LevelConditionsController(winConditionFunc, loseConditionFunc);
+
+            _gameController = new GameController(playerCharacterSettings, _playerCharacterSpawner, levelSettings, _enemyCreationService,
+                _levelConditionsController, _followCamera);
+
+            _controllerRunnerService.Register(_gameController, () => false);
         }
 
         private void InitializeGame()
         {
-            PlayerCharacterSettings playerCharacterSettings = Resources.Load<PlayerCharacterSettings>("PlayerCharacter/PlayerCharacterSettings");
-            PlayerCharacter playerCharacter = _playerCharacterSpawner.CreatePlayerCharacterFrom(playerCharacterSettings, _followCamera);
-
-            LevelSettings levelSettings = Resources.Load<LevelSettings>("Level/LevelSettings");
-
-            _enemyCreationService.SummonEnemiesWithInterval(levelSettings.EnemySettings, levelSettings.SpawnInterval,
-                levelSettings.EnemySpawnPositions);
-
-            _levelConditionsCreator = new LevelConditionsCreator(_enemyCreationService, playerCharacter);
-
-            Func<bool> winConditionFunc = _levelConditionsCreator.GetWinConditionFunc(levelSettings.WinConditions, levelSettings.WinConditionValue);
-
-            Func<bool> loseConditionFunc =
-                _levelConditionsCreator.GetLoseConditionFunc(levelSettings.LoseConditions, levelSettings.LoseConditionValue);
-
-            _levelConditionsController = new LevelConditionsController(winConditionFunc, loseConditionFunc);
-            _levelConditionsController.Enable();
-
-            _controllerRunnerService.Register(_levelConditionsController, () => false);
-            _levelConditionsController.GameWon += LevelConditionsController_OnGameWon;
-            _levelConditionsController.GameLost += LevelConditionsController_OnGameLost;
-
-            // add restart
-            // subscribe to win and lose
-            // clean scene after won/lose
-        }
-
-        private void LevelConditionsController_OnGameLost()
-        {
-            Debug.Log("GAME LOST!");
-        }
-
-        private void LevelConditionsController_OnGameWon()
-        {
-            Debug.Log("GAME WON");
+            _gameController.StartGame();
         }
     }
 }

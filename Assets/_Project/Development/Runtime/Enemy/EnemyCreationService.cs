@@ -23,6 +23,8 @@ namespace Runtime.Enemy
 
         public int DeadCount { get; private set; }
 
+        private Coroutine _spawnCoroutine;
+
         public EnemyCreationService(EnemiesSpawner enemiesSpawner, Enemy enemyPrefab, MonoBehaviour coroutinesRunner)
         {
             _enemiesSpawner = enemiesSpawner;
@@ -33,15 +35,21 @@ namespace Runtime.Enemy
         public void SummonEnemiesWithInterval(EnemySettings enemySettings, float spawnInterval,
             List<Vector3> spawnPoints)
         {
-            _coroutinesRunner.StartCoroutine(SpawnEnemies(enemySettings, spawnInterval, spawnPoints));
+            if (_spawnCoroutine != null)
+            {
+                _coroutinesRunner.StopCoroutine(_spawnCoroutine);
+                _spawnCoroutine = null;
+            }
+
+            _spawnCoroutine = _coroutinesRunner.StartCoroutine(SpawnEnemies(enemySettings, spawnInterval, spawnPoints));
         }
 
         private IEnumerator SpawnEnemies(EnemySettings settings, float interval, List<Vector3> spawnPoints)
         {
             while (true)
-                foreach (var spawnPoint in spawnPoints)
+                foreach (Vector3 spawnPoint in spawnPoints)
                 {
-                    var enemy = _enemiesSpawner.CreateEnemy(_enemyPrefab, spawnPoint, settings);
+                    Enemy enemy = _enemiesSpawner.CreateEnemy(_enemyPrefab, spawnPoint, settings);
                     _createdEnemies.Add(enemy);
 
                     enemy.Destroyed += Enemy_OnDestroyed;
@@ -58,6 +66,18 @@ namespace Runtime.Enemy
             DeadCount++;
 
             _createdEnemies.Remove(enemy);
+        }
+
+        public void StopSpawningEnemies()
+        {
+            _coroutinesRunner.StopCoroutine(_spawnCoroutine);
+
+            foreach (Enemy enemy in _createdEnemies.Value)
+            {
+                Object.Destroy(enemy);
+            }
+
+            _spawnCoroutine = null;
         }
     }
 }
